@@ -1,0 +1,6 @@
+{
+  "name": "Vũ Trụ Tình Yêu 3D - Quà Tặng Bạn Gái",
+  "description": "Không gian 3D tương tác cử chỉ tay AI, vòng xoay ảnh kỷ niệm, hộp nhạc lãng mạn và phong bì thư tình tối ưu cho iPhone & mã QR.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
