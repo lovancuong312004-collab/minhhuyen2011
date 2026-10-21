@@ -7,9 +7,9 @@
  * 3. Chuyển enabled: true -> Xong! Mỗi khi ai tạo quà, bot sẽ báo ngay về điện thoại bạn.
  */
 export const TELEGRAM_CONFIG = {
-  enabled: false, // Đổi thành true khi bạn đã điền botToken và chatId
-  botToken: '',   // Ví dụ: '1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ'
-  chatId: '',     // Ví dụ: '987654321'
+  enabled: true,
+  botToken: '8926685506:AAE8efoWb19bOn8IxjyUEI2HZ12rAV7v8bM',
+  chatId: '8331970784',
 };
 
 /**
