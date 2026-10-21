@@ -33,14 +33,16 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
       try {
         // Nén và mã hóa toàn bộ dữ liệu quà tặng vào tham số 'g'
         const encodedData = await encodeGiftToUrlParam(giftConfig);
-        const url = new URL(window.location.href);
+        
+        // Khởi tạo URL sạch từ origin và pathname (không mang theo param cũ)
+        const url = new URL(window.location.origin + window.location.pathname);
 
         // Chuyển domain ais-dev- sang ais-pre- nếu đang dùng AI Studio
         if (url.hostname.startsWith('ais-dev-')) {
           url.hostname = url.hostname.replace('ais-dev-', 'ais-pre-');
         }
 
-        url.searchParams.delete('gift');
+        url.search = '';
         url.searchParams.set('g', encodedData);
         const finalUrl = url.toString();
 
@@ -96,7 +98,7 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
             dark: '#c2185b',
             light: '#ffffff',
           },
-          errorCorrectionLevel: 'H',
+          errorCorrectionLevel: 'M',
         });
 
         // Heart-accented white card frame for QR

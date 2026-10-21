@@ -49,10 +49,19 @@ function fromUrlSafeBase64(base64: string): Uint8Array {
 export async function encodeGiftToUrlParam(gift: GiftConfig): Promise<string> {
   const defaults = getDefaultGiftConfig();
 
-  // Chỉ lưu các trường cần thiết, tránh phình to URL
-  const customImages = gift.memories
-    ?.map((m) => m.imageUrl || m.videoUrl || '')
-    .filter((url) => Boolean(url) && !url.startsWith('data:image/svg'));
+  // CHỈ lưu link ảnh nếu là URL web hợp lệ (http:// hoặc https://) ngắn gọn.
+  // TUYỆT ĐỐI KHÔNG lưu data: (base64) hoặc blob: vì sẽ khiến URL phình to hàng trăm KB gây lỗi URI_TOO_LONG!
+  const validWebImages = (gift.memories || [])
+    .map((m) => m.imageUrl || m.videoUrl || '')
+    .filter((url) => /^https?:\/\//i.test(url) && url.length < 300)
+    .slice(0, 10);
+
+  const validFooterPhoto =
+    gift.loveLetter.footerPhotoUrl &&
+    /^https?:\/\//i.test(gift.loveLetter.footerPhotoUrl) &&
+    gift.loveLetter.footerPhotoUrl.length < 300
+      ? gift.loveLetter.footerPhotoUrl
+      : undefined;
 
   const payload: CompactGiftPayload = {
     v: 1,
@@ -61,8 +70,8 @@ export async function encodeGiftToUrlParam(gift: GiftConfig): Promise<string> {
     b: gift.loveLetter.body,
     s: gift.loveLetter.signature,
     d: gift.loveLetter.date,
-    m: gift.musicTrackIndex,
-    // Chỉ lưu nếu khác mặc định
+    m: typeof gift.musicTrackIndex === 'number' ? gift.musicTrackIndex : 0,
+    // Chỉ lưu nếu khác mặc định để giữ link siêu ngắn gọn
     w:
       JSON.stringify(gift.floatingWishes) !==
       JSON.stringify(defaults.floatingWishes)
@@ -73,8 +82,8 @@ export async function encodeGiftToUrlParam(gift: GiftConfig): Promise<string> {
       JSON.stringify(defaults.particlePhrases)
         ? gift.particlePhrases
         : undefined,
-    imgs: customImages && customImages.length > 0 ? customImages : undefined,
-    fp: gift.loveLetter.footerPhotoUrl,
+    imgs: validWebImages.length > 0 ? validWebImages : undefined,
+    fp: validFooterPhoto,
   };
 
   const jsonString = JSON.stringify(payload);
