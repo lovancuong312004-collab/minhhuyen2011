@@ -960,6 +960,7 @@ async function uploadBlobToServer(
   blob: Blob,
   ext: string
 ): Promise<string | null> {
+  // 1. Thử lưu vào server cục bộ nếu đang chạy server.ts
   try {
     const res = await fetch(
       `/api/upload-raw?ext=${encodeURIComponent(ext)}`,
@@ -974,8 +975,22 @@ async function uploadBlobToServer(
       return data.url;
     }
   } catch {
-    // Fallback to local object/data URL
+    // Không có local server (ví dụ trên Vercel)
   }
+
+  // 2. Tự động lưu trữ lên Đám mây ImgBB (Miễn phí & Vĩnh viễn) nếu là ảnh
+  if (/^(jpg|jpeg|png|webp|gif)$/i.test(ext)) {
+    try {
+      const { uploadImageToImgBB } = await import('./giftSharing');
+      const cloudUrl = await uploadImageToImgBB(blob);
+      if (cloudUrl) {
+        return cloudUrl;
+      }
+    } catch {
+      // Fallback
+    }
+  }
+
   return null;
 }
 

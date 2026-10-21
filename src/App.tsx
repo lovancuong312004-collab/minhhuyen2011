@@ -30,6 +30,7 @@ import {
   processBulkUploadedFiles,
   sanitizeLegacyGiftConfig,
 } from './utils/defaultMemories';
+import { decodeGiftFromUrlParam } from './utils/giftSharing';
 import { romanticAudio } from './utils/romanticAudio';
 
 const STORAGE_KEY = 'cosmic_love_dlove_v10';
@@ -166,8 +167,11 @@ export default function App() {
   const [isRecipientMode, setIsRecipientMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const hostname = window.location.hostname;
     return (
+      params.has('g') ||
+      hashParams.has('g') ||
       params.has('gift') ||
       hostname.startsWith('ais-pre-') ||
       params.get('mode') === 'recipient'
@@ -189,6 +193,27 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const encodedGift = params.get('g') || hashParams.get('g');
+
+    // Ưu tiên đọc dữ liệu mã hóa vĩnh viễn từ link URL
+    if (encodedGift) {
+      decodeGiftFromUrlParam(encodedGift).then((customGift) => {
+        if (customGift) {
+          const cleanGift = sanitizeLegacyGiftConfig(customGift);
+          setGiftConfig(cleanGift);
+          setIsRecipientMode(true);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanGift));
+          } catch {
+            // Ignore
+          }
+        }
+      });
+      return;
+    }
+
+    // Nếu không có 'g', kiểm tra 'gift' từ API hoặc local
     const giftId = params.get('gift') || '';
     fetch(`/api/gift${giftId ? `?id=${encodeURIComponent(giftId)}` : ''}`)
       .then((res) => res.json())
@@ -853,15 +878,30 @@ export default function App() {
 
       {/* 11. Discreet Admin Toggle for the Creator */}
       {isRecipientMode && (
-        <button
-          type="button"
-          onClick={() => setIsRecipientMode(false)}
-          title="Mở thanh công cụ chỉnh sửa (Dành cho người tạo)"
-          aria-label="Chế độ chỉnh sửa"
-          className="fixed bottom-3 left-3 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/20 text-white/20 hover:bg-black/60 hover:text-white/80 transition-all opacity-30 hover:opacity-100 cursor-pointer"
-        >
-          <SlidersHorizontal className="h-3 w-3" />
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => setIsRecipientMode(false)}
+            title="Mở thanh công cụ chỉnh sửa (Dành cho người tạo)"
+            aria-label="Chế độ chỉnh sửa"
+            className="fixed bottom-3 left-3 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/20 text-white/20 hover:bg-black/60 hover:text-white/80 transition-all opacity-30 hover:opacity-100 cursor-pointer"
+          >
+            <SlidersHorizontal className="h-3 w-3" />
+          </button>
+
+          {/* 12. "Tự tạo quà tặng 3D" button for visitors */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsRecipientMode(false);
+              setIsStudioOpen(true);
+            }}
+            title="Tự tạo một món quà 3D tặng người yêu của bạn"
+            className="fixed bottom-3 right-3 z-30 flex items-center gap-1.5 rounded-full border border-pink-400/40 bg-[#160524]/85 backdrop-blur-sm px-3.5 py-1.5 text-[11px] font-semibold text-[#ffd6eb] shadow-[0_0_15px_rgba(255,42,133,0.3)] hover:bg-[#ff2a85]/40 hover:text-white hover:border-[#ff85c0] transition-all cursor-pointer"
+          >
+            <span>✨ Tự tạo quà tặng 3D</span>
+          </button>
+        </>
       )}
     </div>
   );
