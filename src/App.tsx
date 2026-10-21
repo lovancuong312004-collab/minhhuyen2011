@@ -616,22 +616,31 @@ export default function App() {
         )}
       </header>
 
-      {/* 4. STAGE 'idle': Glowing Pink Fingerprint Sensor ("Giữ để bắt đầu") */}
+      {/* 4. STAGE 'idle': Glowing Pink Fingerprint Sensor ("Chạm để bắt đầu") */}
       {stage === 'idle' && (
-        <div className="fixed inset-x-0 bottom-12 z-20 flex flex-col items-center justify-center pb-safe">
-          <p className="mb-3 text-xs sm:text-sm font-semibold tracking-wide text-[#ffb3d9] drop-shadow-[0_2px_10px_rgba(255,42,133,0.9)]">
-            Giữ để bắt đầu
-          </p>
+        <div
+          onClick={handleStartSequence}
+          className="fixed inset-0 z-20 flex flex-col items-center justify-end pb-12 cursor-pointer pb-safe"
+        >
+          <div className="flex flex-col items-center mb-3">
+            <span className="text-2xl mb-1 animate-bounce">✨</span>
+            <p className="text-xs sm:text-sm font-semibold tracking-wide text-[#ffb3d9] drop-shadow-[0_2px_12px_rgba(255,42,133,0.95)] animate-pulse">
+              Chạm vào màn hình hoặc dấu vân tay để mở quà 🎁
+            </p>
+          </div>
           <button
             type="button"
             onPointerDown={handleStartSequence}
-            onClick={handleStartSequence}
-            aria-label="Giữ để bắt đầu"
-            className={`relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#ff5ca8] bg-[#ff2a85]/20 text-[#ff85c0] shadow-[0_0_32px_rgba(255,42,133,0.85)] transition-transform duration-300 cursor-pointer ${
-              isHoldingStart ? 'scale-125 bg-[#ff2a85]/50' : 'hover:scale-105'
+            onClick={(e) => {
+              e.stopPropagation();
+              handleStartSequence();
+            }}
+            aria-label="Chạm để bắt đầu"
+            className={`relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#ff5ca8] bg-[#ff2a85]/25 text-[#ff85c0] shadow-[0_0_35px_rgba(255,42,133,0.9)] transition-transform duration-300 cursor-pointer ${
+              isHoldingStart ? 'scale-125 bg-[#ff2a85]/50' : 'hover:scale-110 active:scale-95'
             }`}
           >
-            <span className="absolute inset-0 rounded-full border border-[#ff85c0] animate-ping opacity-40" />
+            <span className="absolute inset-0 rounded-full border border-[#ff85c0] animate-ping opacity-45" />
             <Fingerprint className="h-9 w-9 text-[#ffb3d9]" />
           </button>
         </div>
