@@ -163,6 +163,16 @@ export default function App() {
   const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isSavingServer, setIsSavingServer] = useState(false);
+  const [isRecipientMode, setIsRecipientMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    const hostname = window.location.hostname;
+    return (
+      params.has('gift') ||
+      hostname.startsWith('ais-pre-') ||
+      params.get('mode') === 'recipient'
+    );
+  });
 
   const [quickUploadBanner, setQuickUploadBanner] = useState<string>('');
   const quickFilesInputRef = useRef<HTMLInputElement | null>(null);
@@ -514,29 +524,33 @@ export default function App() {
 
       {/* 3. Top-Right Controls + 1-Click Add More Photos/Videos */}
       <header className="fixed top-0 right-0 z-30 pt-safe pr-4 pt-3.5 flex items-center gap-2">
-        <input
-          ref={quickFilesInputRef}
-          type="file"
-          accept="image/*,video/*,.heic,.heif,.mov,.mp4,.webm,.zip"
-          multiple
-          onChange={(e) => {
-            if (e.target.files) {
-              handleQuickBulkUpload(e.target.files);
-            }
-            e.target.value = '';
-          }}
-          className="hidden"
-        />
+        {!isRecipientMode && (
+          <>
+            <input
+              ref={quickFilesInputRef}
+              type="file"
+              accept="image/*,video/*,.heic,.heif,.mov,.mp4,.webm,.zip"
+              multiple
+              onChange={(e) => {
+                if (e.target.files) {
+                  handleQuickBulkUpload(e.target.files);
+                }
+                e.target.value = '';
+              }}
+              className="hidden"
+            />
 
-        <button
-          type="button"
-          onClick={() => quickFilesInputRef.current?.click()}
-          title="Thêm nhanh ảnh & video mới (.mov/.mp4/.heic/.zip)"
-          className="flex h-9 items-center gap-1.5 rounded-full border border-[#ff85c0]/50 bg-[#ff2a85]/25 px-3.5 text-xs font-bold text-[#ffd6eb] hover:bg-[#ff2a85] hover:text-white transition-all cursor-pointer"
-        >
-          <FolderUp className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Thêm Ảnh/Video</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => quickFilesInputRef.current?.click()}
+              title="Thêm nhanh ảnh & video mới (.mov/.mp4/.heic/.zip)"
+              className="flex h-9 items-center gap-1.5 rounded-full border border-[#ff85c0]/50 bg-[#ff2a85]/25 px-3.5 text-xs font-bold text-[#ffd6eb] hover:bg-[#ff2a85] hover:text-white transition-all cursor-pointer"
+            >
+              <FolderUp className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Thêm Ảnh/Video</span>
+            </button>
+          </>
+        )}
 
         <button
           type="button"
@@ -577,25 +591,29 @@ export default function App() {
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={() => setIsQrModalOpen(true)}
-          title="Lấy mã QR tặng bạn gái"
-          aria-label="Mã QR"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/75 hover:bg-white/15 hover:text-white transition-all cursor-pointer"
-        >
-          <QrCode className="h-4 w-4" />
-        </button>
+        {!isRecipientMode && (
+          <>
+            <button
+              type="button"
+              onClick={() => setIsQrModalOpen(true)}
+              title="Lấy mã QR tặng bạn gái"
+              aria-label="Mã QR"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/75 hover:bg-white/15 hover:text-white transition-all cursor-pointer"
+            >
+              <QrCode className="h-4 w-4" />
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setIsStudioOpen(true)}
-          title="Quản lý ảnh, video & sửa chữ"
-          aria-label="Cài đặt"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/65 hover:bg-white/15 hover:text-white transition-all cursor-pointer"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-        </button>
+            <button
+              type="button"
+              onClick={() => setIsStudioOpen(true)}
+              title="Quản lý ảnh, video & sửa chữ"
+              aria-label="Cài đặt"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/65 hover:bg-white/15 hover:text-white transition-all cursor-pointer"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
+          </>
+        )}
       </header>
 
       {/* 4. STAGE 'idle': Glowing Pink Fingerprint Sensor ("Giữ để bắt đầu") */}
@@ -821,7 +839,21 @@ export default function App() {
         isOpen={isQrModalOpen}
         giftConfig={giftConfig}
         onClose={() => setIsQrModalOpen(false)}
+        onPreviewRecipientMode={() => setIsRecipientMode(true)}
       />
+
+      {/* 11. Discreet Admin Toggle for the Creator */}
+      {isRecipientMode && (
+        <button
+          type="button"
+          onClick={() => setIsRecipientMode(false)}
+          title="Mở thanh công cụ chỉnh sửa (Dành cho người tạo)"
+          aria-label="Chế độ chỉnh sửa"
+          className="fixed bottom-3 left-3 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-black/20 text-white/20 hover:bg-black/60 hover:text-white/80 transition-all opacity-30 hover:opacity-100 cursor-pointer"
+        >
+          <SlidersHorizontal className="h-3 w-3" />
+        </button>
+      )}
     </div>
   );
 }

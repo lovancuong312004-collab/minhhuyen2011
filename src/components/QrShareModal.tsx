@@ -1,27 +1,36 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { Check, Copy, Download, X } from 'lucide-react';
+import { Check, Copy, Download, Eye, Heart, Info, X } from 'lucide-react';
 import { GiftConfig } from '../types/gift';
 
 interface QrShareModalProps {
   isOpen: boolean;
   giftConfig: GiftConfig;
   onClose: () => void;
+  onPreviewRecipientMode?: () => void;
 }
 
 export const QrShareModal: React.FC<QrShareModalProps> = ({
   isOpen,
   giftConfig,
   onClose,
+  onPreviewRecipientMode,
 }) => {
   const cardCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedWish, setCopiedWish] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
     const url = new URL(window.location.href);
-    url.searchParams.set('gift', giftConfig.id || 'love-2010');
+
+    // Tự động chuyển domain ais-dev- sang ais-pre- để link có thể truy cập công khai
+    if (url.hostname.startsWith('ais-dev-')) {
+      url.hostname = url.hostname.replace('ais-dev-', 'ais-pre-');
+    }
+
+    url.searchParams.set('gift', giftConfig.id || 'danh-tang-em');
     const finalUrl = url.toString();
     setShareUrl(finalUrl);
 
@@ -34,7 +43,7 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
       canvas.width = 720;
       canvas.height = 960;
 
-      // Pastel pink floral card background matching 0:01 - 0:03 of Video 2
+      // Pastel pink floral card background
       const grad = ctx.createLinearGradient(0, 0, 720, 960);
       grad.addColorStop(0, '#fff5f8');
       grad.addColorStop(0.5, '#ffe3ee');
@@ -94,7 +103,7 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
       // Footer text
       ctx.fillStyle = '#ad1457';
       ctx.font = '600 24px "Quicksand", sans-serif';
-      ctx.fillText('Quét mã QR bằng Camera iPhone để mở quà 🎁', 360, 745);
+      ctx.fillText('Quét mã QR bằng Camera điện thoại để mở quà 🎁', 360, 745);
 
       ctx.fillStyle = '#880e4f';
       ctx.font = '600 32px "Dancing Script", cursive';
@@ -113,8 +122,20 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2500);
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 2500);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleCopyWishAndLink = async () => {
+    try {
+      const recipient = giftConfig.loveLetter.recipient || 'Em';
+      const text = `Gửi tặng ${recipient} món quà nhỏ từ trái tim ❤️ Mở ra để khám phá vũ trụ tình yêu dành riêng cho em nhé:\n${shareUrl}`;
+      await navigator.clipboard.writeText(text);
+      setCopiedWish(true);
+      window.setTimeout(() => setCopiedWish(false), 2500);
     } catch {
       // Ignore
     }
@@ -129,18 +150,28 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
     link.click();
   };
 
+  const handlePreviewGirlfriendView = () => {
+    if (onPreviewRecipientMode) {
+      onPreviewRecipientMode();
+      onClose();
+    } else {
+      window.open(shareUrl, '_blank');
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md max-h-[90vh] flex flex-col rounded-3xl border border-[#ff85c0]/40 bg-[#12041c]/95 text-white shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden"
+        className="relative w-full max-w-lg max-h-[92vh] flex flex-col rounded-3xl border border-[#ff85c0]/40 bg-[#12041c]/95 text-white shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-          <h2 className="text-base font-bold text-[#ff85c0]">
-            Thiệp Mã QR 20/10 Tặng Bạn Gái
+          <h2 className="text-base font-bold text-[#ff85c0] flex items-center gap-2">
+            <span>🎁</span>
+            <span>Chia Sẻ Quà Tặng & Mã QR</span>
           </h2>
           <button
             type="button"
@@ -152,38 +183,84 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
           </button>
         </div>
 
-        <div className="overflow-y-auto custom-scroll p-6 space-y-5 text-center">
-          <div className="mx-auto max-w-[270px] overflow-hidden rounded-2xl border border-[#ff85c0]/40 shadow-2xl">
+        <div className="overflow-y-auto custom-scroll p-6 space-y-4 text-center">
+          {/* Card Preview */}
+          <div className="mx-auto max-w-[250px] overflow-hidden rounded-2xl border border-[#ff85c0]/40 shadow-2xl">
             <canvas ref={cardCanvasRef} className="w-full h-auto block" />
           </div>
 
-          <div className="flex items-center justify-center gap-3">
+          {/* Primary Action Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             <button
               type="button"
               onClick={handleDownloadCard}
-              className="flex min-h-[42px] items-center justify-center gap-2 rounded-full bg-[#ff2a85] text-white px-5 py-2 text-xs font-bold shadow-[0_0_15px_rgba(255,42,133,0.5)] hover:brightness-110 transition-all cursor-pointer"
+              className="flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-[#ff2a85] text-white px-4 py-2 text-xs font-bold shadow-[0_0_15px_rgba(255,42,133,0.5)] hover:brightness-110 transition-all cursor-pointer"
             >
-              <Download className="h-3.5 w-3.5" />
-              <span>Tải Thiệp QR</span>
+              <Download className="h-4 w-4" />
+              <span>Tải Thiệp QR (PNG)</span>
             </button>
 
             <button
               type="button"
               onClick={handleCopyLink}
-              className="flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-white/20 bg-white/[0.05] px-5 py-2 text-xs font-bold text-white hover:bg-white/15 transition-colors cursor-pointer"
+              className="flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/[0.08] px-4 py-2 text-xs font-bold text-white hover:bg-white/15 transition-colors cursor-pointer"
             >
-              {copied ? (
+              {copiedLink ? (
                 <>
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Đã sao chép link</span>
+                  <Check className="h-4 w-4 text-emerald-400" />
+                  <span className="text-emerald-300">Đã chép link quà</span>
                 </>
               ) : (
                 <>
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>Sao chép link</span>
+                  <Copy className="h-4 w-4" />
+                  <span>Sao chép link quà</span>
                 </>
               )}
             </button>
+          </div>
+
+          {/* Secondary Action Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={handleCopyWishAndLink}
+              className="flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-[#ff85c0]/30 bg-[#ff2a85]/15 px-4 py-2 text-xs font-bold text-[#ffd6eb] hover:bg-[#ff2a85]/30 transition-all cursor-pointer"
+            >
+              {copiedWish ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-emerald-300">Đã chép kèm lời chúc</span>
+                </>
+              ) : (
+                <>
+                  <Heart className="h-3.5 w-3.5 text-[#ff85c0]" />
+                  <span>Chép kèm lời chúc</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePreviewGirlfriendView}
+              className="flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/90 hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <Eye className="h-3.5 w-3.5 text-pink-300" />
+              <span>Xem thử giao diện Bạn Gái</span>
+            </button>
+          </div>
+
+          {/* Notes & Guidance Box */}
+          <div className="rounded-2xl border border-pink-400/25 bg-pink-500/10 p-3.5 text-left text-xs text-[#ffd6eb]/90 space-y-1.5 leading-relaxed">
+            <div className="flex items-center gap-1.5 font-bold text-[#ff85c0]">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              <span>Chế độ Người Nhận Quà (Recipient Gift Mode)</span>
+            </div>
+            <p>
+              • Khi bạn gái mở qua link hoặc quét mã QR, các nút quản trị (Thêm Ảnh, Tùy chỉnh, Mã QR) sẽ tự động ẩn đi, chỉ giữ lại âm nhạc, thư tình và vũ trụ 3D lãng mạn.
+            </p>
+            <p>
+              • Nếu đang chạy trên AI Studio / Cloud Run, bạn nhớ bấm nút <strong>Share</strong> (góc trên) và bật <strong>Public / Anyone with the link</strong> để ai có link cũng xem được nhé!
+            </p>
           </div>
         </div>
       </div>
